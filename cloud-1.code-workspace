@@ -1,0 +1,13 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "files.associations": {
+      "ansible/inventory.yaml": "ansible"
+    },
+    "ansible.python.interpreterPath": "c:\\Users\\marti\\AppData\\Local\\Programs\\Python\\Python310\\python.exe"
+  }
+}
