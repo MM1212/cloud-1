@@ -1,0 +1,32 @@
+- name: Generate certbot certificates
+  hosts: all
+  become: true
+  environment: 
+    CERTBOT_EMAIL: "{{ lookup('env', 'CERTBOT_EMAIL') }}"
+  vars:
+    certbot_email: "{{ lookup('env', 'CERTBOT_EMAIL') }}"
+  tasks:
+    - name: Install certbot
+      community.general.snap:
+        name: certbot
+        state: present
+        classic: true
+    - name: Has valid certificate
+      ansible.builtin.shell:
+        cmd: |
+          certbot certificates | grep "{{ ansible_host }}"
+      changed_when: false
+      register: certbot
+    - name: Generate certificates
+      ansible.builtin.command:
+        cmd: |
+          certbot certonly --standalone -d "{{ ansible_host }}" --non-interactive --agree-tos -m "{{ certbot_email }}"
+      when: certbot.rc != 0
+    - name: Setup renewal cron job
+      ansible.builtin.copy:
+        content: |
+          0 0 * * * certbot renew --quiet
+        dest: /etc/cron.d/certbot
+        mode: '0644'
+      when: certbot.rc == 0
+    

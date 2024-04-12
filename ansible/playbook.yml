@@ -1,0 +1,7 @@
+- name: Ping all hosts
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Ping all hosts
+      ansible.builtin.wait_for_connection:
+        

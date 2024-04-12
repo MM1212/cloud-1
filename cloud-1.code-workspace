@@ -8,6 +8,9 @@
     "files.associations": {
       "ansible/inventory.yaml": "ansible"
     },
-    "ansible.python.interpreterPath": "c:\\Users\\marti\\AppData\\Local\\Programs\\Python\\Python310\\python.exe"
+    "ansible.python.interpreterPath": "c:\\Users\\marti\\AppData\\Local\\Programs\\Python\\Python310\\python.exe",
+    "yaml.schemas": {
+      "https://raw.githubusercontent.com/ansible/ansible-lint/main/src/ansiblelint/schemas/ansible.json#/$defs/playbook": "file:///home/mm/42/projects/cloud-1/ansible/plays/certs.yaml"
+    }
   }
 }

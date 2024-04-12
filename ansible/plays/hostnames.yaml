@@ -1,0 +1,22 @@
+- name: Change hostnames
+  become: true
+  hosts: all
+  tasks:
+    - name: Change hostname
+      ansible.builtin.hostname:
+        name: "{{ ansible_host }}"
+    - name: Reboot
+      ansible.builtin.reboot:
+        reboot_timeout: 300
+        connect_timeout: 30
+    - name: Wait for reboot
+      ansible.builtin.wait_for_connection:
+        connect_timeout: 300
+    - name: Check hostname changed
+      ansible.builtin.shell:
+        cmd: hostname
+      register: hostname
+    - name: Debug
+      ansible.builtin.debug:
+        msg: "{{ hostname.stdout }}"
+    
