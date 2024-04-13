@@ -1,0 +1,89 @@
+- name: Change hostnames
+  become: true
+  hosts: all
+  tasks:
+    - name: Check /etc/hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: "{{ ansible_host }}$"
+        line: "127.0.0.1 {{ ansible_host }}"
+      register: etc_hosts_check
+    - name: Check hostname
+      ansible.builtin.hostname:
+        name: "{{ ansible_host }}"
+      register: hostname
+    - meta: end_host
+      when: hostname.changed == false and etc_hosts_check.changed == false
+    - name: Reboot
+      ansible.builtin.reboot:
+        reboot_timeout: 300
+        connect_timeout: 30
+    - name: Wait for reboot
+      ansible.builtin.wait_for_connection:
+        connect_timeout: 300
+    - name: Check hostname changed
+      ansible.builtin.shell:
+        cmd: hostname
+      register: hostname
+      failed_when: hostname.stdout != ansible_host
+- name: Setup Firewall
+  become: true
+  hosts: all
+  tasks:
+    - name: Check if ufw is installed
+      ansible.builtin.package:
+        name: ufw
+        state: present
+    - name: Setup firewall
+      community.general.ufw:
+        policy: deny
+    - name: Allow SSH
+      community.general.ufw:
+        rule: allow
+        port: "22"
+        proto: tcp
+    - name: Allow HTTPS
+      community.general.ufw:
+        rule: allow
+        port: "443"
+        proto: tcp
+    - name: Enable ufw
+      community.general.ufw:
+        state: enabled
+    - name: Check ufw status
+      ansible.builtin.shell:
+        cmd: ufw status
+      register: ufw
+      changed_when: 'ufw.stdout.find("Status: active") == -1'
+- name: Setup Docker
+  become: true
+  hosts: all
+  tasks:
+    - name: Check if docker is installed
+      ansible.builtin.shell:
+        cmd: docker --version
+      register: docker
+      ignore_errors: true
+      changed_when: docker.rc != 0
+    - meta: end_host
+      when: docker.rc == 0
+    - name: Download docker script
+      ansible.builtin.get_url:
+        url: https://get.docker.com
+        dest: /tmp/install-docker.sh
+        mode: 0755
+    - name: Install docker
+      ansible.builtin.shell:
+        cmd: /tmp/install-docker.sh
+    - name: Check if docker is installed
+      ansible.builtin.shell:
+        cmd: docker --version
+      register: docker
+    - name: Check if docker-compose is installed
+      ansible.builtin.shell:
+        cmd: docker compose --version
+      register: docker_compose
+      ignore_errors: true
+    - name: Debug
+      ansible.builtin.debug:
+        msg: "{{ docker.rc }}-{{ docker_compose.rc }}"
