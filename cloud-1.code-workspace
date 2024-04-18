@@ -12,7 +12,8 @@
     "yaml.schemas": {
       "https://raw.githubusercontent.com/ansible/ansible-lint/main/src/ansiblelint/schemas/ansible.json#/$defs/playbook": [
         "file:///home/mm/42/projects/cloud-1/ansible/plays/certs.yaml",
-        "file:///home/martiper/42/projects/cloud-1/ansible/plays/setup.yaml"
+        "file:///home/martiper/42/projects/cloud-1/ansible/plays/setup.yaml",
+        "file:///home/mm/42/projects/cloud-1/ansible/plays/deploy.yaml"
       ]
     }
   }

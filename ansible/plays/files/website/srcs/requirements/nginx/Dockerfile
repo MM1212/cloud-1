@@ -21,9 +21,10 @@ RUN apt-get update && \
 
 # Copy Nginx configuration
 COPY conf/nginx.conf /etc/nginx/sites-available/default
+COPY tools/entrypoint.sh /tmp/tools/entrypoint.sh
 
-# Generate SSL certificate
-RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/privatekey.key -out /etc/ssl/certs/certificate.crt -subj "/C=PT/L=Lisboa/O=42Lisboa/OU=Student/CN=htomas-d.42.fr"
+RUN chmod +x /tmp/tools/entrypoint.sh
 
+ENTRYPOINT [ "/tmp/tools/entrypoint.sh" ]
 # Start Nginx in daemon mode
 CMD [ "nginx", "-g", "daemon off;" ]

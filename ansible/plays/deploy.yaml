@@ -1,0 +1,40 @@
+- name: 'Deploy website'
+  hosts: all
+  become: true
+  vars:
+    root_path: '/var/website'
+    docker_compose_path: '{{ root_path }}/srcs'
+    env_path: '{{ root_path }}/.env'
+  tasks:
+    - name: 'Copy files'
+      ansible.builtin.copy:
+        src: './website/'
+        dest: '/var/website'
+    - name: 'Create .env'
+      ansible.builtin.copy:
+        remote_src: true
+        src: '{{ root_path }}/.env.sample'
+        dest: '{{ env_path }}'
+        
+    - name: 'Setup .env'
+      ansible.builtin.lineinfile:
+        path: '{{ env_path }}'
+        regexp: '^DOMAN_NAME='
+        line: 'DOMAIN_NAME={{ ansible_host }}'
+    - name: 'Stop containers'
+      community.docker.docker_compose_v2:
+        project_src: '{{ docker_compose_path }}'
+        state: absent
+    - name: 'Start containers'
+      community.docker.docker_compose_v2:
+        project_src: '{{ docker_compose_path }}'
+      register: output
+    - name: 'Check output'
+      debug:
+        var: output
+    # - name: 'Verify services'
+    #   ansible.builtin.assert:
+    #     that:
+    #       - 'output.services.'
+    #       - 'output.services.wordpress.state == "started"'
+    #       - 'output.services.mariadb.state == "started"'

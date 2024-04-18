@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   nginx:
     image: nginx
@@ -8,10 +6,12 @@ services:
     container_name: nginx
     build:
       context: ./requirements/nginx
+    env_file: ../.env
     ports:
       - "443:443"
+      - "80:80"
     networks:
-      - ricky
+      - cloud1
     restart: always
     volumes:
       - wordpress_data:/var/www/html  
@@ -24,9 +24,10 @@ services:
     container_name: wordpress
     build:
       context: ./requirements/wordpress
-    env_file: .env
+    env_file: ../.env
     networks:
-      - ricky
+      - cloud1
+      - cloud1-db
     expose:
       - 9000
     restart: always
@@ -40,9 +41,9 @@ services:
       context: ./requirements/mariadb
     expose:
       - 3306
-    env_file: .env
+    env_file: ../.env
     networks:
-      - ricky
+      - cloud1-db
     healthcheck:
       interval: 5s
       timeout: 30s
@@ -52,23 +53,15 @@ services:
     restart: always
     volumes:
       - mariadb_data:/var/lib/mysql #mariadb is a fork of mysql so theres compatibility
-
+  # phpmyadmin
 volumes:
   mariadb_data:
-    driver: local
-    driver_opts:
-      type: none
-      device: "${MARIADB_VOL}"
-      o: bind
   wordpress_data:
-    driver: local
-    driver_opts:
-      type: none
-      device: "${WORDPRESS_VOL}"
-      o: bind
 
 networks: #allows the containers to "talk to eachother"
-  ricky:
+  cloud1-db:
+    driver: bridge
+  cloud1:
     driver: bridge
     # When you use the "bridge" network driver, 
     # containers attached to the same network can communicate with each other using their container names as hostnames.
