@@ -18,9 +18,6 @@ services:
 
   wordpress:
     image: wordpress
-    depends_on:
-      mariadb:
-        condition: service_healthy
     container_name: wordpress
     build:
       context: ./requirements/wordpress
@@ -65,3 +62,74 @@ networks: #allows the containers to "talk to eachother"
     driver: bridge
     # When you use the "bridge" network driver, 
     # containers attached to the same network can communicate with each other using their container names as hostnames.
+
+
+
+
+# services:
+#   nginx:
+#     image: nginx
+#     depends_on:
+#       - wordpress
+#     container_name: nginx
+#     build:
+#       context: ./requirements/nginx
+#     env_file: ../.env
+#     ports:
+#       - "443:443"
+#       - "80:80"
+#     networks:
+#       - cloud1
+#     restart: always
+#     volumes:
+#       - wordpress_data:/var/www/html  
+
+#   wordpress:
+#     image: wordpress
+#     depends_on:
+#       mariadb:
+#         condition: service_healthy
+#     container_name: wordpress
+#     build:
+#       context: ./requirements/wordpress
+#     env_file: ../.env
+#     networks:
+#       - cloud1
+#       - cloud1-db
+#     expose:
+#       - 9000
+#     restart: always
+#     volumes:
+#       - wordpress_data:/var/www/html  
+
+#   mariadb:
+#     image: mariadb
+#     container_name: mariadb
+#     build:
+#       context: ./requirements/mariadb
+#     expose:
+#       - 3306
+#     env_file: ../.env
+#     networks:
+#       - cloud1-db
+#     healthcheck:
+#       interval: 5s
+#       timeout: 30s
+#       retries: 10
+#       start_period: 5s
+#       test: ["CMD", "mysqladmin", "ping", "--silent"]
+#     restart: always
+#     volumes:
+#       - mariadb_data:/var/lib/mysql #mariadb is a fork of mysql so theres compatibility
+#   # phpmyadmin
+# volumes:
+#   mariadb_data:
+#   wordpress_data:
+
+# networks: #allows the containers to "talk to eachother"
+#   cloud1-db:
+#     driver: bridge
+#   cloud1:
+#     driver: bridge
+#     # When you use the "bridge" network driver, 
+#     # containers attached to the same network can communicate with each other using their container names as hostnames.

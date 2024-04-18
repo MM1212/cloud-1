@@ -1,7 +1,5 @@
-# # Use the official Debian base image
 FROM debian:buster
 
-# Install MariaDB and other required packages
 RUN apt-get update && apt-get upgrade -y && \
     apt-get install -yq mariadb-server && \ 
     apt-get clean && \
@@ -13,10 +11,8 @@ RUN mkdir -p /var/run/mysqld && \
     chmod 777 /var/run/mysqld
 
 COPY ./conf/start.sh .
-RUN chmod 744 ./start.sh
+RUN chmod 777 ./start.sh
 
 EXPOSE 3306
 
 ENTRYPOINT ./start.sh
-
-#ENTRYPOINT [ "tail", "-f", "/dev/null" ]
