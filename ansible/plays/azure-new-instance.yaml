@@ -1,0 +1,141 @@
+- name: Create Azure VM
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    vm_vnet_range: '10.0.0.0/16'
+    vm_name: 'cloud-1-{{ vm_id }}'
+    vm_hostname: 'h{{ vm_id }}.cloud-1.martiper.me'
+    ansible_python_interpreter: /usr/bin/python3.10
+    resource_group: 'cloud-1'
+    vm_vnet: cloud-1-{{location}}-vnet
+    ssh_key: cloud-1-key
+  tasks:
+    - debug:
+        msg: 'Creating VM {{ vm_name }} in resource group {{ resource_group }}'
+    - name: Check Resource Group
+      azure.azcollection.azure_rm_resourcegroup_info:
+        name: '{{ resource_group }}'
+      register: rg_info
+    - name: Create Resource Group
+      when: rg_info.resourcegroups == [] or not rg_info.resourcegroups[0].name
+      azure.azcollection.azure_rm_resourcegroup:
+        name: '{{ resource_group }}'
+        location: '{{ location }}'
+    - name: Get SSH key from azure
+      azure.azcollection.azure_rm_sshpublickey_info:
+        resource_group: '{{resource_group}}'
+        name: '{{ssh_key}}'
+      register: output_ssh_key
+      failed_when: output_ssh_key.ssh_keys == [] or not output_ssh_key.ssh_keys[0].public_key
+    - set_fact:
+        ssh_key: "{{ output_ssh_key.ssh_keys[0] }}"
+    - debug:
+        var: ssh_key
+    - name: Create public IP address
+      azure.azcollection.azure_rm_publicipaddress:
+        resource_group: '{{ resource_group }}'
+        allocation_method: Static
+        name: '{{ vm_name }}_public_ip'
+        location: '{{ location }}'
+      register: output_ip_address
+    - name: Public IP of VM
+      debug:
+        msg: 'The public IP is {{ output_ip_address.state.ip_address }}.'
+    - name: Create Network Security Group that allows SSH
+      azure.azcollection.azure_rm_securitygroup:
+        resource_group: '{{ resource_group }}'
+        name: '{{resource_group}}_{{location}}_nsg'
+        location: '{{ location }}'
+        rules:
+          - name: SSH
+            protocol: Tcp
+            destination_port_range: 22
+            access: Allow
+            priority: 1001
+            direction: Inbound
+          - name: HTTP
+            protocol: Tcp
+            destination_port_range:
+              - 80
+              - 443
+            access: Allow
+            priority: 1002
+            direction: Inbound
+      register: output_nsg
+    - name: Create virtual network
+      azure.azcollection.azure_rm_virtualnetwork:
+        resource_group: '{{ resource_group }}'
+        name: '{{ vm_vnet }}'
+        address_prefixes: '{{ vm_vnet_range }}'
+        location: '{{ location }}'
+    - name: Setup vnet default subnet
+      azure.azcollection.azure_rm_subnet:
+        resource_group: '{{ resource_group }}'
+        virtual_network_name: '{{ vm_vnet }}'
+        name: default
+        address_prefix_cidr: '{{ vm_vnet_range }}'
+    - name: Create virtual network interface card
+      azure.azcollection.azure_rm_networkinterface:
+        resource_group: '{{resource_group}}'
+        name: '{{vm_name}}_nic'
+        virtual_network: '{{vm_vnet}}'
+        subnet: default
+        location: '{{ location }}'
+        public_ip_name: '{{vm_name}}_public_ip'
+        security_group: '{{resource_group}}_{{location}}_nsg'
+      register: output_nic
+    - name: Create VM
+      azure.azcollection.azure_rm_virtualmachine:
+        resource_group: '{{resource_group}}'
+        name: '{{vm_name}}'
+        vm_size: Standard_B2ats_v2
+        managed_disk_type: Premium_LRS
+        location: '{{ location }}'
+        admin_username: cloud1
+        ssh_password_enabled: false
+        ssh_public_keys:
+          - path: /home/cloud1/.ssh/authorized_keys
+            key_data: '{{ssh_key.public_key}}'
+        network_interfaces: '{{vm_name}}_nic'
+        virtual_network_name: '{{vm_vnet}}'
+        virtual_network_resource_group: '{{resource_group}}_{{location}}_nsg'
+        image:
+          offer: 0001-com-ubuntu-server-jammy
+          publisher: canonical
+          sku: 22_04-lts-gen2
+          version: latest
+      register: output_vm
+    - name: Add Cloudflare DNS Records
+      community.general.cloudflare_dns:
+        zone: '{{ cloudflare_zone }}'
+        record: 'h{{ vm_id }}.cloud-1'
+        type: A
+        value: '{{ output_ip_address.state.ip_address }}'
+        account_email: '{{ cloudflare_account_email }}'
+        account_api_key: '{{ cloudflare_api_key }}'
+        api_token: '{{ cloudflare_api_token }}'
+      ignore_errors: true
+      register: record
+    # - name: debug vm
+    #   debug:
+    #     var: output_vm
+    # - name: debug nic
+    #   debug:
+    #     var: output_nic
+    # - name: debug ip
+    #   debug:
+    #     var: output_ip_address
+    # - name: debug nsg
+    #   debug:
+    #     var: output_nsg
+    - name: Output result
+      debug:
+        msg:
+          - 'VM {{output_vm.ansible_facts.azure_vm.name}} created successfully in {{output_vm.ansible_facts.azure_vm.location}}.'
+          - '  - Hostname: {{ vm_hostname }}'
+          - '  - Public IP: {{ output_ip_address.state.ip_address }}'
+          - '  - NIC: {{ output_nic.state.id }}'
+          - '  - NSG: {{ output_nsg.state.id }}'
+          - '  - VM: {{ output_vm.ansible_facts.azure_vm.id }}'
+          - '  - Cloudflare DNS: {{ record }}'

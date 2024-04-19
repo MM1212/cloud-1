@@ -12,20 +12,20 @@
       ansible.builtin.hostname:
         name: "{{ ansible_host }}"
       register: hostname
-    - meta: end_host
-      when: hostname.changed == false and etc_hosts_check.changed == false
+    - name: Check if reboot is needed
+      set_fact:
+        should_reboot: '{{hostname.changed == true or etc_hosts_check.changed == true}}'
     - name: Reboot
       ansible.builtin.reboot:
         reboot_timeout: 300
         connect_timeout: 30
-    - name: Wait for reboot
-      ansible.builtin.wait_for_connection:
-        connect_timeout: 300
+      when: should_reboot == true
     - name: Check hostname changed
       ansible.builtin.shell:
         cmd: hostname
       register: hostname
       failed_when: hostname.stdout != ansible_host
+      when: should_reboot == true
 - name: Setup Firewall
   become: true
   hosts: all
@@ -64,26 +64,30 @@
         cmd: docker --version
       register: docker
       ignore_errors: true
-      changed_when: docker.rc != 0
-    - meta: end_host
-      when: docker.rc == 0
+      failed_when: false
+      changed_when: false
+    - name: Check if needs to install docker
+      set_fact:
+        install_docker: "{{docker.rc != 0}}" 
+    - debug:
+        var: install_docker
     - name: Download docker script
       ansible.builtin.get_url:
         url: https://get.docker.com
         dest: /tmp/install-docker.sh
         mode: 0755
+      when: install_docker == true
     - name: Install docker
       ansible.builtin.shell:
         cmd: /tmp/install-docker.sh
+      when: install_docker == true
     - name: Check if docker is installed
       ansible.builtin.shell:
         cmd: docker --version
       register: docker
+      when: install_docker == true
     - name: Check if docker-compose is installed
       ansible.builtin.shell:
         cmd: docker compose --version
       register: docker_compose
-      ignore_errors: true
-    - name: Debug
-      ansible.builtin.debug:
-        msg: "{{ docker.rc }}-{{ docker_compose.rc }}"
+      when: install_docker == true

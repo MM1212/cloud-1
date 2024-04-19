@@ -15,8 +15,14 @@
       ansible.builtin.shell:
         cmd: |
           certbot certificates | grep "{{ ansible_host }}"
+      ignore_errors: true
       changed_when: false
+      failed_when: false
       register: certbot
+    - name: 'Host {{ ansible_host }} has valid certificate'
+      debug:
+        msg: '{{ certbot.stdout }}'
+      when: certbot.rc == 0
     - name: Generate certificates
       ansible.builtin.command:
         cmd: |
@@ -27,6 +33,4 @@
         content: |
           0 0 * * * certbot renew --quiet
         dest: /etc/cron.d/certbot
-        mode: '0644'
-      when: certbot.rc == 0
-    
+        mode: '0644'    

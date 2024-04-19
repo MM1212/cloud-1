@@ -7,7 +7,6 @@ RUN apt-get update && \
   rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Copy Nginx configuration
-COPY conf/nginx.conf /etc/nginx/sites-available/default
 COPY tools/entrypoint.sh /tmp/tools/entrypoint.sh
 
 RUN chmod +x /tmp/tools/entrypoint.sh

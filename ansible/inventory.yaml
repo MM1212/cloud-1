@@ -9,4 +9,4 @@ all:
   vars:
     ansible_user: cloud1
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
-    ansible_ssh_private_key_file: "{{lookup('env', 'HOME')}}/.ssh/cloud-1-00_key.pem"
+    ansible_ssh_private_key_file: "{{lookup('env', 'HOME')}}/.ssh/cloud-1-key.pem"
