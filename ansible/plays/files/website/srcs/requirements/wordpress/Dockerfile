@@ -1,21 +1,11 @@
 # Use the official Debian base image
-FROM debian:buster
+FROM debian:bullseye-slim
 
 RUN apt-get update && apt-get -y install \
 	wget \
 	curl \
-	bash \
-	php \
-	php-cgi \
-	php-mysql \
+	php-mysqli \
 	php-fpm \
-	php-pdo \
-	php-gd \
-	php-cli \
-	php-mbstring \
-	redis \
-	php-redis \
-	coreutils \
 	&& rm -rf /var/lib/apt/lists/*
 
 
@@ -24,12 +14,9 @@ RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli
   && chmod +x wp-cli.phar \
   && mv wp-cli.phar /usr/local/bin/wp
 
-COPY ./conf/www.conf /etc/php/7.3/fpm/pool.d/
+COPY ./conf/www.conf /etc/php/7.4/fpm/pool.d/
 # Create a directory for PHP runtime files to enable PHP to start correctly
 RUN mkdir /run/php
-
-COPY ./conf/setup.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/setup.sh
 
 # Create a custom entrypoint script
 COPY ./conf/entrypoint.sh .

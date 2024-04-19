@@ -1,0 +1,17 @@
+- name: 'Deploy website'
+  hosts: all
+  become: true
+  vars:
+    root_path: '/var/website'
+    docker_compose_path: '{{ root_path }}/srcs'
+    env_path: '{{ root_path }}/.env'
+  tasks:
+    - name: 'Stop containers'
+      community.docker.docker_compose_v2:
+        project_src: '{{ docker_compose_path }}'
+        state: absent
+      environment:
+        HOSTNAME: '{{ ansible_host }}'
+    - name: 'Delete volumes'
+      ansible.builtin.shell: "docker volume rm -f inception_mariadb inception_wordpress"
+

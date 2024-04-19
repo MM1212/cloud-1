@@ -7,27 +7,39 @@
     env_path: '{{ root_path }}/.env'
   tasks:
     - name: 'Copy files'
-      ansible.builtin.copy:
+      ansible.posix.synchronize:
         src: './website/'
         dest: '/var/website'
+        checksum: true
     - name: 'Create .env'
       ansible.builtin.copy:
         remote_src: true
         src: '{{ root_path }}/.env.sample'
         dest: '{{ env_path }}'
-        
+
     - name: 'Setup .env'
       ansible.builtin.lineinfile:
         path: '{{ env_path }}'
-        regexp: '^DOMAN_NAME='
+        regexp: '^DOMAIN_NAME='
         line: 'DOMAIN_NAME={{ ansible_host }}'
     - name: 'Stop containers'
       community.docker.docker_compose_v2:
         project_src: '{{ docker_compose_path }}'
         state: absent
+      environment:
+        HOSTNAME: '{{ ansible_host }}'
+    - name: 'Build containers'
+      community.docker.docker_compose_v2:
+        project_src: '{{ docker_compose_path }}'
+        build: always
+      environment:
+        HOSTNAME: '{{ ansible_host }}'
     - name: 'Start containers'
       community.docker.docker_compose_v2:
         project_src: '{{ docker_compose_path }}'
+        state: present
+      environment:
+        HOSTNAME: '{{ ansible_host }}'
       register: output
     - name: 'Check output'
       debug:
