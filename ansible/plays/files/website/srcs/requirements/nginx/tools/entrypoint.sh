@@ -24,6 +24,25 @@ server {
     include fastcgi_params;
   }
 }
+server {
+  listen 8080 ssl;
+  listen [::]:8080 ssl;
+  server_name $DOMAIN_NAME;
+
+  ssl_certificate $SSL_PATH/fullchain.pem;
+  ssl_certificate_key $SSL_PATH/privkey.pem;
+  ssl_protocols TLSv1.3;
+
+  index index.php index.htm index.html;
+  location / {
+    proxy_pass http://phpmyadmin:80;
+    proxy_redirect off;
+    proxy_set_header Host \$host;
+    proxy_set_header X-Real-IP \$remote_addr;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto \$scheme;
+  }
+}
 " > /etc/nginx/sites-available/default;
 
 exec nginx -g 'daemon off;'

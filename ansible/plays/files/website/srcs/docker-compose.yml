@@ -9,7 +9,7 @@ services:
     env_file: ../.env
     ports:
       - "443:443"
-      - "80:80"
+      - "8080:8080"
     networks:
       - cloud1
     restart: always
@@ -54,6 +54,21 @@ services:
     restart: always
     volumes:
       - mariadb_data:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    links:
+      - mariadb
+    expose:
+      - 80
+    env_file: ../.env
+    networks:
+      - cloud1
+      - cloud1-db
+    depends_on:
+      - mariadb
+
 volumes:
   mariadb_data:
     name: inception_mariadb
