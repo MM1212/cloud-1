@@ -62,6 +62,12 @@
             access: Allow
             priority: 1002
             direction: Inbound
+          - name: PHPMyAdmin
+            protocol: Tcp
+            destination_port_range: 8080
+            access: Allow
+            priority: 1003
+            direction: Inbound
       register: output_nsg
     - name: Create virtual network
       azure.azcollection.azure_rm_virtualnetwork:
