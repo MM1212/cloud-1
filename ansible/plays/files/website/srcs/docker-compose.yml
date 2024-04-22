@@ -68,6 +68,7 @@ services:
       - cloud1-db
     depends_on:
       - mariadb
+    restart: always
 
 volumes:
   mariadb_data:
